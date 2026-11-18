@@ -17,3 +17,5 @@ data/processed/*
 
 *.pkl
 *.joblib
+# regenerable outputs (run notebooks 03-05)
+results/scores/*.npz

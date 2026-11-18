@@ -193,3 +193,54 @@ def plot_data(myy):
     sub_axes.yaxis.set_label_coords( -0.09, 0.5 ) # x,y coordinates of the y-axis label on the sub axes
     
     return
+
+# ---------------------------------------------------------------------------
+# Plots for the classifier / comparison notebooks
+# ---------------------------------------------------------------------------
+
+def plot_fit(fit, title="", lumi=9.5, fig=None, label_extra=None):
+    """Data, signal+background fit and background-only component for an
+    evaluate.MyyFit, with a data - background residual panel (same layout as
+    plot_data, but 1 GeV bins and the likelihood fit)."""
+    from evaluate import CENTRES, MASS_RANGE
+
+    if fig is None:
+        fig = plt.figure(figsize=(7, 5.5))
+    gs = fig.add_gridspec(2, 1, height_ratios=[3, 1], hspace=0.05)
+    ax, sub = fig.add_subplot(gs[0]), fig.add_subplot(gs[1])
+
+    n = fit.n
+    err = np.sqrt(np.maximum(n, 1))
+    xf = np.linspace(*MASS_RANGE, 600)
+    bkg = fit.background()
+
+    ax.errorbar(CENTRES, n, yerr=err, fmt="ko", ms=3, label="Data")
+    ax.plot(xf, fit.total(xf), "-r", label=f"Sig+Bkg fit ($m_H$ = {fit.mass:.1f} GeV)")
+    ax.plot(xf, fit.background(xf), "--r", label="Bkg (4th order polynomial)")
+    ax.set_xlim(*MASS_RANGE)
+    ax.set_ylabel("Events / GeV")
+    ax.tick_params(which="both", direction="in", top=True, right=True, labelbottom=False)
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
+    lines = [r"$\bf{ATLAS\ Open\ Data}$",
+             r"$\sqrt{s}$ = 13 TeV, " + f"{lumi:g} " + r"fb$^{-1}$, $H \rightarrow \gamma\gamma$"]
+    if title:
+        lines.append(title)
+    lines.append(f"$N_{{sig}}$ = {fit.nsig:.0f} ± {fit.nsig_err:.0f}")
+    if label_extra:
+        lines.append(label_extra)
+    # lower-left corner is empty for a falling spectrum
+    ax.text(0.04, 0.05, "\n".join(lines), transform=ax.transAxes, fontsize=9, va="bottom")
+    ax.legend(frameon=False, loc="upper right", fontsize=9)
+
+    sub.errorbar(CENTRES, n - bkg, yerr=err, fmt="ko", ms=3)
+    sub.plot(xf, fit.total(xf) - fit.background(xf), "-r")
+    sub.axhline(0, color="r", ls="--")
+    sub.set_xlim(*MASS_RANGE)
+    sub.yaxis.set_major_locator(MaxNLocator(nbins=5, symmetric=True))
+    sub.set_xlabel(r"di-photon invariant mass $m_{\gamma\gamma}$ [GeV]")
+    sub.set_ylabel("Data - Bkg")
+    sub.tick_params(which="both", direction="in", top=True, right=True)
+    sub.xaxis.set_minor_locator(AutoMinorLocator())
+    fig.align_ylabels([ax, sub])
+    return fig
